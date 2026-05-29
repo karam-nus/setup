@@ -1,0 +1,135 @@
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                         OH MY ZSH                                ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# ZSH_THEME is intentionally empty — we define a fully custom prompt
+# below, so loading a theme would just get overridden and waste time.
+export ZSH="$HOME/.oh-my-zsh"
+ZSH_THEME=""
+
+# Oh My Zsh plugins — add names here to enable them.
+# Built-in list: https://github.com/ohmyzsh/ohmyzsh/wiki/Plugins
+plugins=(git)
+
+source $ZSH/oh-my-zsh.sh
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                           PATH                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+export PATH="$HOME/.local/bin:$PATH"
+export PATH="$PATH:/Users/karam/.lmstudio/bin"   # LM Studio CLI
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                          CONDA                                   ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# Prevent conda from rewriting our prompt (we show the env ourselves)
+export CONDA_CHANGEPS1=false
+
+# Portable init: finds conda in PATH or falls back to common install
+# locations so this config works across machines without modification.
+_init_conda() {
+    local conda_bin p
+    conda_bin="$(command -v conda 2>/dev/null)"
+    if [[ -z "$conda_bin" ]]; then
+        for p in \
+            "$HOME/miniconda3/bin/conda" \
+            "$HOME/anaconda3/bin/conda" \
+            "$HOME/opt/miniconda3/bin/conda" \
+            "$HOME/opt/anaconda3/bin/conda" \
+            "/opt/miniconda3/bin/conda" \
+            "/opt/anaconda3/bin/conda"; do
+            [[ -x "$p" ]] && { conda_bin="$p"; break; }
+        done
+    fi
+    [[ -n "$conda_bin" ]] && eval "$("$conda_bin" shell.zsh hook 2>/dev/null)"
+}
+_init_conda && unset -f _init_conda
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                          ALIASES                                 ║
+# ╚══════════════════════════════════════════════════════════════════╝
+alias cdw='cd ~/work'
+
+# eza replaces ls with icons, colors, and git status in ll.
+# Falls back to system ls silently if eza is not installed.
+if command -v eza &>/dev/null; then
+    alias ls='eza --icons --group-directories-first'
+    alias ll='eza -la --icons --group-directories-first --git'
+fi
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                       SMART NAVIGATION                           ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# zoxide: replaces cd with a frecency-based jumper.
+# Usage: z <partial-dir-name>  →  jumps to the best match.
+# Install: brew install zoxide
+command -v zoxide &>/dev/null && eval "$(zoxide init zsh)"
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                          PROMPT                                  ║
+# ╚══════════════════════════════════════════════════════════════════╝
+autoload -U colors && colors
+setopt PROMPT_SUBST
+
+# Shows active conda env in magenta. Hidden when no env is active.
+_conda_env() {
+    [[ -n "$CONDA_DEFAULT_ENV" ]] && echo "%F{magenta}(${CONDA_DEFAULT_ENV})%f "
+}
+
+# Shows git branch + status. Green ✓ = clean, Red * = uncommitted changes.
+# Returns nothing outside of a git repo.
+_git_info() {
+    local branch dirty
+    branch=$(git symbolic-ref --short HEAD 2>/dev/null) || return
+    [[ -n "$(git status --porcelain 2>/dev/null)" ]] && dirty="%F{red}*%f" || dirty="%F{green}✓%f"
+    echo "%F{yellow}[${branch}${dirty}%F{yellow}]%f "
+}
+
+# Tracks how long each command takes. Elapsed time appears in the
+# prompt (in grey) only when a command took more than 2 seconds.
+_cmd_timer_start() { _cmd_start=$SECONDS }
+_cmd_timer_stop() {
+    local elapsed=$(( SECONDS - ${_cmd_start:-$SECONDS} ))
+    (( elapsed > 2 )) && _cmd_time=" %F{242}${elapsed}s%f" || _cmd_time=""
+    unset _cmd_start
+}
+add-zsh-hook preexec _cmd_timer_start
+add-zsh-hook precmd _cmd_timer_stop
+
+# Prompt layout:
+#   Line 1:  timestamp   [elapsed time if > 2s]
+#   Line 2:  hostname  cwd  (conda-env)  [git-branch✓]  ➜ / ✗
+#
+# Arrow is blue on success, red on failure of the previous command.
+# Single quotes are required — zsh re-evaluates $(...) on every draw.
+PS1='%F{yellow}%D{%m-%d %H:%M:%S}%f${_cmd_time}
+%F{cyan}%m%f %F{green}%1~%f $(_conda_env)$(_git_info)%(?.%F{blue}➜%f.%F{red}✗%f) '
+
+
+# ╔══════════════════════════════════════════════════════════════════╗
+# ║                     PLUGIN INTEGRATIONS                          ║
+# ╚══════════════════════════════════════════════════════════════════╝
+# Each tool is sourced only if installed — safe to keep on machines
+# that don't have them yet. Install all at once with:
+#   brew install zsh-syntax-highlighting zsh-autosuggestions fzf
+#   $(brew --prefix)/opt/fzf/install --all --no-bash --no-fish
+
+BREW_PREFIX="$(brew --prefix 2>/dev/null)"
+
+# Colours commands red/green as you type
+[[ -f "${BREW_PREFIX}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh" ]] && \
+    source "${BREW_PREFIX}/share/zsh-syntax-highlighting/zsh-syntax-highlighting.zsh"
+
+# Ghost-text history suggestions — press → to accept
+[[ -f "${BREW_PREFIX}/share/zsh-autosuggestions/zsh-autosuggestions.zsh" ]] && \
+    source "${BREW_PREFIX}/share/zsh-autosuggestions/zsh-autosuggestions.zsh"
+
+# fzf fuzzy finder — Ctrl+R: history search  |  Ctrl+T: file picker
+[[ -f "${BREW_PREFIX}/opt/fzf/shell/key-bindings.zsh" ]] && \
+    source "${BREW_PREFIX}/opt/fzf/shell/key-bindings.zsh"
+[[ -f "${BREW_PREFIX}/opt/fzf/shell/completion.zsh" ]] && \
+    source "${BREW_PREFIX}/opt/fzf/shell/completion.zsh"
