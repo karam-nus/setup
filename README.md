@@ -11,6 +11,7 @@ Each topic has a guide (`.md`) and an install script (`scripts/`). Dotfiles live
 | # | Topic | What's covered |
 |---|-------|---------------|
 | 1 | [Zsh](./01_zsh.md) | Oh My Zsh, custom prompt, eza, zoxide, fzf, syntax highlighting, autosuggestions |
+| 10 | [AWS](./10_aws.md) | Account model (root vs dev), CLI v2 + SSO, VS Code, IAM/S3/EC2/SageMaker, cost discipline for ML |
 
 ---
 
