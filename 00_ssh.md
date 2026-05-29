@@ -3,7 +3,7 @@
 > The first real step in any setup. SSH is how you log into remote machines, push to GitHub, copy files, and tunnel ports — all **without typing a password**, using cryptographic keys. This chapter explains what SSH *is*, the words you'll keep hearing, and exactly how to generate keys and wire up passwordless connections to servers and GitHub.
 
 > [!IMPORTANT]
-> The one idea to hold onto: SSH uses a **pair of keys** — a **private** one that *never leaves your machine* and a **public** one you hand out freely. You put your public key on a server (or GitHub); the server then trusts anyone holding the matching private key. No passwords travel over the wire.
+> The one idea to hold onto: SSH uses a **pair of keys** — a **private** one that *never leaves your machine* and a **public** one you hand out freely. You put your public key on a server (or GitHub); the server then trusts anyone holding the matching private key. No passwords travel over the wire. Think of private key as `key` and public key as a `lock`. So after setup, the concept is equivalent to "who has `key` for `lock` to enter this server?". 
 
 ---
 
